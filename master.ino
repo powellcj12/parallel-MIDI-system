@@ -1,5 +1,6 @@
 static char currentInput = 0x0;
-static bit state = 0; //0: Read Note Next 1:Read Velocity Next
+static bit state = 0; //0: Read Note Next; 1:Read Velocity Next
+
 void setup()
 {
     Serial.begin(115200);
@@ -18,6 +19,7 @@ void loop()
     
     while (1)
     {
+	//make sure we don't re-read the same data
         if(!(data == (PINB & B00111111) && control == (PIND >> 6)))
         {
             data = PINB & B00111111;
