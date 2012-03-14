@@ -1,5 +1,7 @@
-static char currentInput = 0x0;
-static bit state = 0; //0: Read Note Next; 1:Read Velocity Next
+//CONTROL SIGNALS
+// 11 - Note On
+// 10 - Note Off
+// 0X - Velocity
 
 void setup()
 {
@@ -12,7 +14,6 @@ void setup()
 void loop()
 {
     char noteNumber = 0x0;
-    char velocity = 0x0;
     char control = 0x03;
     char data = 0x0;
     boolean ack = false;
@@ -22,39 +23,36 @@ void loop()
 	//make sure we don't re-read the same data
         if(!(data == (PINB & B00111111) && control == (PIND >> 6)))
         {
-            data = PINB & B00111111;
-            control = PIND >> 6;
+            delayMicroseconds(3);
+            data = PINB & B00111111;  //set new data
+            control = PIND >> 6;      //set new control signal
             
-            if(PIND & B10000000) //read note number
+            if(PIND & B10000000) //read note number (True for values B1XXXXXXX, NoteOn/NoteOff message)
             {
-                noteNumber = PINB & B00111111;
-                    
-                if(PIND & B01000000) //note on
-                {
+                noteNumber = data = PINB & B00111111;
+                if(PIND & B01000000) //Branch for values B11XXXXXX  (Note On Messages)
+                { 
                     Serial.print("Received note on message for note ");
                 }
-                else //note off
+                else //Branch for values B10XXXXXX  (Note On Messages)
                 {
                     Serial.print("Received note off message for note ");
-                } 
-                
-                Serial.println(noteNumber);
+                }
+                Serial.println(data);
             }
             else //read velocity
             {
-                velocity = PINB & B00111111;
                 Serial.print("Received velocity ");
-                Serial.print(velocity);
+                Serial.print(data);
                 Serial.print(" for note ");
                 Serial.println(noteNumber);
             }
             
-            ack = !ack;
-            PORTD = (ack) ? PORTD & B11011111 : PORTD | B00100000;
+            PORTD = PORTD ^ B00100000;
         }
         else
         {
-            delayMicroseconds(20);
+            delayMicroseconds(3);
         }
     }
 }
