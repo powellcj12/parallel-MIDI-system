@@ -3,17 +3,15 @@
 // 10 - Note Off
 // 0X - Velocity
 
-
-
 void setup()
 {
     //Serial.begin(115200);
     DDRD = (B11000000 | DDRD) & B00100000;
     DDRB = (B0011111 | DDRB);
-    
 }
 
 char ackMask = B00100000;
+
 void loop()
 {
     typedef struct
