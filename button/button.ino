@@ -5,6 +5,7 @@ const int ledPin =  13;      // the number of the LED pin
 
 // variables will change:
 int buttonState = 0;         // variable for reading the pushbutton status
+volatile char keyPress = 0x0;
 
 void setup() {
   PCICR |= 1 << PCIE1; //enable interups for Port C
@@ -28,18 +29,21 @@ void setup() {
 
 void loop(){
   // read the state of the pushbutton value:
-  buttonState = digitalRead(buttonPin);
+  //buttonState = digitalRead(buttonPin);
+  /*
+  buttonState = keyPress & B00100000;
   
   for(int i = 0; i < 6; i++)
   {
-      int val = digitalRead(buttonPin+i);
+      //int val = keyPress >> i;
+      char pinTest = 1 << i;
       
-      if(val)
+      if(keyPress & pinTest)
       {
         Serial.print("Button ");
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(val);
+        Serial.println(i);
+        //Serial.print(": ");
+        //Serial.println(val);
       }
   }
 
@@ -53,8 +57,22 @@ void loop(){
     // turn LED off:
     digitalWrite(ledPin, LOW); 
   }
+  */
 }
 
 ISR(PCINT1_vect) {
+  if(PINC & B00100000)
+      Serial.println("Pin 5");
+  if(PINC & B00010000)
+      Serial.println("Pin 4");
+  if(PINC & B00001000)
+      Serial.println("Pin 3");
+  if(PINC & B00000100)
+      Serial.println("Pin 2");
+  if(PINC & B00000010)
+      Serial.println("Pin 1");
+  if(PINC & B00000001)
+      Serial.println("Pin 0");
     
+  //keyPress = PINC;
 }
