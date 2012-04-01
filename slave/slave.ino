@@ -8,7 +8,7 @@
 
 void setup()
 {
-    Serial.begin(115200);
+    //Serial.begin(115200);
     DDRD = (B11000000 | DDRD) & B11010011;
     DDRB = (B00111111 | DDRB);
     
@@ -61,27 +61,21 @@ void loop()
             //Serial.println(PIND&B00100000);
             while (((PIND & B00001100) >> 2) != 0x01) //if it is not slave number 1 select, wait
             {
-                
-                Serial.println("A");
-                delayMicroseconds(3);
+                //Serial.println("A");
+                //delayMicroseconds(3);
             }
               
             if (messages[i].noteOnMessage)
             {
-                /*
-                while (ackMask == (PIND & B00100000))        //Wait until the ack signal has changed 
-                {
-                    delayMicroseconds(3);                    //(ACK state != old ACK state)
-                }*/
-                ackMask = PIND & B00100000;                  //Get new ACK state
                 PORTB = B00111111 & messages[i].noteNumber;  //Push Note # into B[5:0]
                 PORTD = B11000000 | PORTD;                   //Control Signal = 11
                 //Serial.print("Sent note for message on ");
                 //Serial.println(i);
+                ackMask = PIND & B00100000;                  //Get new ACK state
                 while (ackMask == (PIND & B00100000)) 
                 {
-                    Serial.println("B");
-                    delayMicroseconds(3);                    //(ACK state != old ACK state)
+                    //Serial.println("B");
+                    //delayMicroseconds(3);                    //(ACK state != old ACK state)
                 }       //(ACK state != old ACK state)
                 ackMask = PIND & B00100000;                  //Get new ACK state
                 PORTB = B00111111 & messages[i].velocity;    //Push velocity into B[5:0]
@@ -104,8 +98,8 @@ void loop()
                 
                 while (ackMask == (PIND & B00100000)) 
                 {
-                    Serial.println("C");
-                    delayMicroseconds(3);                    //(ACK state != old ACK state)
+                    //Serial.println("C");
+                    //delayMicroseconds(3);                    //(ACK state != old ACK state)
                 } 
             }
             
@@ -115,10 +109,11 @@ void loop()
             
             while (((PIND & B00001100) >> 2) == 0x01)
             {
-              Serial.println("D");
-              delayMicroseconds(3);
+              //Serial.println("D");
+              //delayMicroseconds(3);
             }
         }
     }
 }
+
 

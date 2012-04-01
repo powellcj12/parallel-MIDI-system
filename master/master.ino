@@ -5,7 +5,7 @@
 
 void setup()
 {
-    Serial.begin(115200);
+    //Serial.begin(115200);
     DDRD = (B00111111 & DDRD) | B00101100;
     DDRB = (B1100000);
     /*
@@ -24,16 +24,19 @@ char state = 0x00;
 void loop()
 {
     delay(1000);
-    PORTD = (PORTD ^ B00100000) | (state << 2);
+    PORTD = PORTD | (state << 2);
     while (1)
     {
-        delay(1000); //wait for signal from new slave
-        Serial.print("state: "); Serial.println(state);
+        
+        //delay(1000); //wait for signal from new slave
+        //Serial.print("state: "); Serial.println(state);
         //Serial.print("control: ");Serial.print((int)control);Serial.print(" data: ");Serial.println((int)data);
 	//make sure we don't re-read the same data
+        if (!(PIND >> 6))
+          delayMicroseconds(2);
         if (!(PIND >> 6)) //I don't have anything on the lines. Shift slave select.
         {
-            Serial.println("Chainging state");
+            //Serial.println("Chainging state");
             state = (state+1);
             PORTD = (PORTD & B11110011) | (B00001100 & (state << 2));
         }
@@ -42,25 +45,26 @@ void loop()
             data = PINB & B00111111;          //Get data
             control = PIND >> 6;              //Get control signal
             PORTD = PORTD ^ B00100000;        //SEND ACK
+            //Serial.println("Got first data");
             if (control == 0x03) //get velocity now
             {
-                while ((data == (PINB & B00111111) && control == (PIND >> 6)))
+                //Serial.println("Note On Message");
+                while (PIND >> 6 == 0x03)
                 {
-                    delayMicroseconds(3);
+                    //delayMicroseconds(3);
                 }
                 data = PINB & B00111111;
                 control = PIND >> 6;
                 PORTD = PORTD ^ B00100000;
-                while ((data == (PINB & B00111111) && control == (PIND >> 6))) //delay until next control signal sent
-                {
-                    delayMicroseconds(3);
-                }
+                //Serial.println("Velocity Message");
             }
             else
             {
-                while ((PIND >> 6))
-                  delayMicroseconds(3);
-            } //we only needed to recieve one message
+                //Serial.println("Note Off Message");
+            }
+            while (PIND >> 6);
+                //delayMicroseconds(3);
+            //Serial.println("Successfully got data for message");
             
         }
         /*
@@ -101,7 +105,7 @@ void loop()
             else
             {
               
-                state = (state+1) % 3;
+               state = (state+1) % 3;
                 PORTD = (PORTD ^ B00100000) & (B11110011 | (state << 2));
                 delayMicroseconds(1000);
                 
