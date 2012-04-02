@@ -4,8 +4,6 @@
 // 01 - Velocity
 // 00 - No Messages to Send
 
-
-
 void setup()
 {
     //Serial.begin(115200);
@@ -13,8 +11,6 @@ void setup()
     DDRB = (B00111111 | DDRB);
     
 }
-
-
 
 char ackMask = B00100000;
 void loop()
@@ -85,11 +81,6 @@ void loop()
             }
             else
             {
-                /*
-                while (ackMask == (PIND & B00100000))
-                {
-                    delayMicroseconds(3);                    //(ACK state != old ACK state)
-                }*/      //(ACK state != old ACK state)
                 ackMask = PIND & B00100000;                  //Get new ACK state
                 PORTB = B00111111 & messages[i].noteNumber;  //Push Note # into B[5:0]
                 PORTD = (B10000000 | PORTD) & B10111111;     //Control Signal = 10
@@ -102,7 +93,6 @@ void loop()
                     //delayMicroseconds(3);                    //(ACK state != old ACK state)
                 } 
             }
-            
             
             PORTB = 0x00;
             PORTD = B00111111 & PORTD; //load control signal 00
