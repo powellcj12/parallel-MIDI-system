@@ -25,7 +25,7 @@ void loop()
     {
         //make sure we don't re-read the same data
         if (!(PIND >> 6))
-          delayMicroseconds(2);
+          delayMicroseconds(1);
         if (!(PIND >> 6)) //I don't have anything on the lines. Shift slave select.
         {
             //Serial.println("Chainging state");
@@ -37,22 +37,15 @@ void loop()
             data = PINB & B00111111;          //Get data
             control = PIND >> 6;              //Get control signal
             PORTD = PORTD ^ B00100000;        //SEND ACK
-            //Serial.println("Got first data");
+            
             if (control == 0x03) //get velocity now
             {
                 //Serial.println("Note On Message");
-                while (PIND >> 6 == 0x03)
-                {
-                    //delayMicroseconds(3);
-                }
+                while (PIND >> 6 == 0x03);
                 data = PINB & B00111111;
                 control = PIND >> 6;
                 PORTD = PORTD ^ B00100000;
                 //Serial.println("Velocity Message");
-            }
-            else
-            {
-                //Serial.println("Note Off Message");
             }
             while (PIND >> 6);
                 //delayMicroseconds(3);
