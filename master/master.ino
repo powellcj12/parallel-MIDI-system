@@ -23,11 +23,7 @@ void loop()
     PORTD = PORTD | (state << 2);
     while (1)
     {
-        
-        //delay(1000); //wait for signal from new slave
-        //Serial.print("state: "); Serial.println(state);
-        //Serial.print("control: ");Serial.print((int)control);Serial.print(" data: ");Serial.println((int)data);
-	//make sure we don't re-read the same data
+        //make sure we don't re-read the same data
         if (!(PIND >> 6))
           delayMicroseconds(2);
         if (!(PIND >> 6)) //I don't have anything on the lines. Shift slave select.

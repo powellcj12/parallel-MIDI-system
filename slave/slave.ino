@@ -10,14 +10,27 @@
 //D[7:6] Control
 //D[5] ACK
 //D[1:0] Select Lines
-#define BUFFERSIZE 20
+
+typedef struct
+{
+    boolean noteOnMessage;
+    char noteNumber;
+    char velocity;
+}
+message;
+
+const int BUFFERSIZE = 20;
 const int buttonPin = 14; // analog pins start at 14
+volatile int dataStorageIndex = 0; // index to store data in buffer
+int bufferAccessIndex = 0; // index to access data from buffer
+message messages[BUFFERSIZE];
+char ackMask = B00100000;
 
 void setup()
 {
     //Serial.begin(115200);
     DDRD = (B11000000 | DDRD) & B11010011;
-    DDRB = (B00111111 | DDRB);
+    DDRB = (B11111111 | DDRB);
     DDRC = (B00000000 | DDRC);
     
     PCICR |= 1 << PCIE1; //enable interups for Port C
@@ -30,84 +43,48 @@ void setup()
     PCMSK1 |= 1 << PCINT12;
     PCMSK1 |= 1 << PCINT13;
   
-    MCUCR = (1<<ISC01) | (1<<ISC01); //risign edge triggered
+    MCUCR = (1<<ISC01) | (1<<ISC01); //rising edge triggered
     
     randomSeed(analogRead(0));
     interrupts();
 }
 
-char ackMask = B00100000;
 void loop()
-{
-    typedef struct
-    {
-        boolean noteOnMessage;
-        char noteNumber;
-        char velocity;
-    }
-    message;
-    
-    message messages[20];
-    messages[0] =  (message){true,  0x00,0x01};  //Note 0 ON Velocity 1
-    messages[1] =  (message){true,  0x01,0x01};  //Note 1 ON Velocity 2
-    messages[2] =  (message){false, 0x00,0x00};  //Note 0 OFF
-    messages[3] =  (message){true,  0x02,0x01};  //Note 2 ON Velocity 3
-    messages[4] =  (message){false, 0x01,0x00};  //Note 1 OFF
-    messages[5] =  (message){true,  0x04,0x01};  //Note 4 ON Velocity 5
-    messages[6] =  (message){true,  0x05,0x01};  //Note 5 ON Velocity 6
-    messages[7] =  (message){true,  0x06,0x01};  //Note 6 ON Velocity 7
-    messages[8] =  (message){false, 0x05,0x00};  //Note 5 OFF
-    messages[9] =  (message){false, 0x06,0x00};  //Note 6 OFF
-    messages[10] = (message){false, 0x04,0x00};  //Note 4 OFF
-    messages[11] = (message){true,  0x03,0x01};  //Note 3 ON Velociy 15
-    messages[12] = (message){false, 0x02,0x00};  //Note 2 OFF
-    messages[13] = (message){true,  0x00,0x01};  //Note 0 ON Velocity 32
-    messages[14] = (message){true,  0x04,0x01};  //Note 1 ON Velocity 32
-    messages[15] = (message){false, 0x00,0x00};  //Note 0 OFF
-    messages[16] = (message){true,  0x00,0x01};  //Note 0 ON Velocity 33
-    messages[17] = (message){false, 0x04,0x00};  //Note 1 OFF
-    messages[18] = (message){false, 0x00,0x00};  //Note 0 OFF
-    messages[19] = (message){false, 0x03,0x00};  //Note 3 OFF
-     
+{ 
     PORTB = 0x00;
     
     while (1)
     {
-        for(int i=0; i < 20; i++)
+        //for(int i=0; i < 20; i++)
+        while(bufferAccessIndex < dataStorageIndex)
         {
-            //Serial.print("AckMask: ");
-            //Serial.println(ackMask & B00100000);
-            //Serial.print("PIND: ");
-            //Serial.println(PIND&B00100000);
             while (((PIND & B00001100) >> 2) != 0x01) //if it is not slave number 1 select, wait
             {
-                //Serial.println("A");
-                //delayMicroseconds(3);
             }
               
-            if (messages[i].noteOnMessage)
+            if (messages[bufferAccessIndex % BUFFERSIZE].noteOnMessage)
             {
-                PORTB = B00111111 & messages[i].noteNumber;  //Push Note # into B[5:0]
-                PORTD = B11000000 | PORTD;                   //Control Signal = 11
+                PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].noteNumber;  //Push Note # into B[5:0]
+                PORTD = B11000000 | PORTD;  //Control Signal = 11
                 //Serial.print("Sent note for message on ");
                 //Serial.println(i);
-                ackMask = PIND & B00100000;                  //Get new ACK state
+                ackMask = PIND & B00100000; //Get new ACK state
                 while (ackMask == (PIND & B00100000)) 
                 {
                     //Serial.println("B");
-                    //delayMicroseconds(3);                    //(ACK state != old ACK state)
+                    //delayMicroseconds(3);
                 }       //(ACK state != old ACK state)
                 ackMask = PIND & B00100000;                  //Get new ACK state
-                PORTB = B00111111 & messages[i].velocity;    //Push velocity into B[5:0]
-                PORTD = (B00111111 & PORTD) | B01000000;                   //Control Signal = 01
+                PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].velocity;    //Push velocity into B[5:0]
+                PORTD = (B00111111 & PORTD) | B01000000; //Control Signal = 01
                 //Serial.print("Sent velocity for message ");
                 //Serial.println(i);
             }
             else
             {
-                ackMask = PIND & B00100000;                  //Get new ACK state
-                PORTB = B00111111 & messages[i].noteNumber;  //Push Note # into B[5:0]
-                PORTD = (B10000000 | PORTD) & B10111111;     //Control Signal = 10
+                ackMask = PIND & B00100000; //Get new ACK state
+                PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].noteNumber;  //Push Note # into B[5:0]
+                PORTD = (B10000000 | PORTD) & B10111111; //Control Signal = 10
                 //Serial.print("Sent note for message off ");
                 //Serial.println(i);
                 
@@ -115,8 +92,10 @@ void loop()
                 {
                     //Serial.println("C");
                     //delayMicroseconds(3);                    //(ACK state != old ACK state)
-                } 
+                }
             }
+
+            bufferAccessIndex++;
             
             PORTB = 0x00;
             PORTD = B00111111 & PORTD; //load control signal 00
@@ -131,16 +110,21 @@ void loop()
 }
 
 ISR(PCINT1_vect) {
-  if(PINC & B00100000)
-      Serial.println("Pin 5");
-  if(PINC & B00010000)
-      Serial.println("Pin 4");
-  if(PINC & B00001000)
-      Serial.println("Pin 3");
-  if(PINC & B00000100)
-      Serial.println("Pin 2");
-  if(PINC & B00000010)
-      Serial.println("Pin 1");
-  if(PINC & B00000001)
-      Serial.println("Pin 0");  
+    char note;
+
+    if(PINC & B00100000)
+        note = 0x05; //pin 5
+    else if(PINC & B00010000)
+        note = 0x04; //pin 4
+    else if(PINC & B00001000)
+        note = 0x03; //pin 3
+    else if(PINC & B00000100)
+        note = 0x02; //pin 2
+    else if(PINC & B00000010)
+        note = 0x01; //pin 1
+    else if(PINC & B00000001)
+        note = 0x00; //pin 0  
+
+    messages[dataStorageIndex % BUFFERSIZE] = (message){true, note, random(128)};
+    dataStorageIndex++;
 }
