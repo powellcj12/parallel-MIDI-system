@@ -20,7 +20,6 @@ typedef struct
 message;
 
 const int BUFFERSIZE = 20;
-const int buttonPin = 14; // analog pins start at 14
 volatile int dataStorageIndex = 0; // index to store data in buffer
 int bufferAccessIndex = 0; // index to access data from buffer
 message messages[BUFFERSIZE];
@@ -28,7 +27,6 @@ char ackMask = B00100000;
 
 void setup()
 {
-    //Serial.begin(115200);
     DDRD = (B11000000 | DDRD) & B11010011;
     DDRB = (B11111111 | DDRB);
     DDRC = (B00000000 | DDRC);
@@ -55,44 +53,29 @@ void loop()
     
     while (1)
     {
-        //for(int i=0; i < 20; i++)
         while(bufferAccessIndex < dataStorageIndex)
         {
-            while (((PIND & B00001100) >> 2) != 0x01) //if it is not slave number 1 select, wait
-            {
-            }
+            while (((PIND & B00001100) >> 2) != 0x01); //if it is not slave number 1 select, wait
               
             if (messages[bufferAccessIndex % BUFFERSIZE].noteOnMessage)
             {
                 PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].noteNumber;  //Push Note # into B[5:0]
                 PORTD = B11000000 | PORTD;  //Control Signal = 11
-                //Serial.print("Sent note for message on ");
-                //Serial.println(i);
                 ackMask = PIND & B00100000; //Get new ACK state
-                while (ackMask == (PIND & B00100000)) 
-                {
-                    //Serial.println("B");
-                    //delayMicroseconds(3);
-                }       //(ACK state != old ACK state)
-                ackMask = PIND & B00100000;                  //Get new ACK state
+                while (ackMask == (PIND & B00100000));
+                //(ACK state != old ACK state)
+                ackMask = PIND & B00100000; //Get new ACK state
                 PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].velocity;    //Push velocity into B[5:0]
                 PORTD = (B00111111 & PORTD) | B01000000; //Control Signal = 01
-                //Serial.print("Sent velocity for message ");
-                //Serial.println(i);
             }
             else
             {
                 ackMask = PIND & B00100000; //Get new ACK state
                 PORTB = B00111111 & messages[bufferAccessIndex % BUFFERSIZE].noteNumber;  //Push Note # into B[5:0]
                 PORTD = (B10000000 | PORTD) & B10111111; //Control Signal = 10
-                //Serial.print("Sent note for message off ");
-                //Serial.println(i);
                 
-                while (ackMask == (PIND & B00100000)) 
-                {
-                    //Serial.println("C");
-                    //delayMicroseconds(3);                    //(ACK state != old ACK state)
-                }
+                while (ackMask == (PIND & B00100000));
+                //(ACK state != old ACK state)
             }
 
             bufferAccessIndex++;
@@ -100,11 +83,7 @@ void loop()
             PORTB = 0x00;
             PORTD = B00111111 & PORTD; //load control signal 00
             
-            while (((PIND & B00001100) >> 2) == 0x01)
-            {
-              //Serial.println("D");
-              //delayMicroseconds(3);
-            }
+            while (((PIND & B00001100) >> 2) == 0x01);
         }
     }
 }
