@@ -1,11 +1,5 @@
-//CONTROL SIGNALS
-// 11 - Note On
-// 10 - Note Off
-// 0X - Velocity
-
 void setup()
 {
-    //Serial.begin(115200);
     DDRD = (B00111111 & DDRD) | B00101100;
     DDRB = (B1100000);
 }
@@ -28,7 +22,6 @@ void loop()
           delayMicroseconds(1);
         if (!(PIND >> 6)) //I don't have anything on the lines. Shift slave select.
         {
-            //Serial.println("Chainging state");
             state = (state+1);
             PORTD = (PORTD & B11110011) | (B00001100 & (state << 2));
         }
@@ -40,17 +33,13 @@ void loop()
             
             if (control == 0x03) //get velocity now
             {
-                //Serial.println("Note On Message");
                 while (PIND >> 6 == 0x03);
                 data = PINB & B00111111;
                 control = PIND >> 6;
                 PORTD = PORTD ^ B00100000;
-                //Serial.println("Velocity Message");
             }
+
             while (PIND >> 6);
-                //delayMicroseconds(3);
-            //Serial.println("Successfully got data for message");
-            
         }
     }
 }
